@@ -6,10 +6,15 @@ import emailService from './service/email-service';
 import kvObjService from './service/kv-obj-service';
 import oauthService from './service/oauth-service';
 import analysisService from './service/analysis-service';
+import { readMailbox } from './service/mailbox-read';
 export default {
 	 async fetch(req, env, ctx) {
 
 		const url = new URL(req.url)
+
+		if (url.pathname === '/api/mailbox/read') {
+			return readMailbox(req, env);
+		}
 
 		if (url.pathname.startsWith('/api/')) {
 			url.pathname = url.pathname.replace('/api', '')
