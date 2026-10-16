@@ -164,7 +164,7 @@ test('missing, duplicate, unknown and malformed parameters are rejected', async 
 	for (const value of ['0', '-1', '01', '1.0', '1e0', '1\n', '1\r\n', '9007199254740992', '1 OR 1=1']) {
 		changes.push(url => url.searchParams.set('accountId', value));
 	}
-	for (const value of ['other@example.invalid\n', 'not-an-email', 'a'.repeat(65) + '@example.invalid']) {
+	for (const value of ['other@example.invalid\n', 'not-an-email', 'a b@example.invalid', 'a@localhost']) {
 		changes.push(url => url.searchParams.set('email', value));
 	}
 	for (const value of ['', 'short', 'A'.repeat(42) + 'B', 'A'.repeat(43) + '=', '%'.repeat(43)]) {
@@ -237,4 +237,20 @@ test('missing bindings and transport errors fail with generic 503 and do not exp
 	await assert.rejects(() => createMailboxReadUrl(ORIGIN, {}, MAILBOX), /Mailbox URL unavailable/);
 	await assert.rejects(() => createMailboxReadUrl(ORIGIN, env, { ...MAILBOX, accountId: 0 }), /Mailbox URL unavailable/);
 	await assert.rejects(() => createMailboxReadUrl(ORIGIN, env, { ...MAILBOX, email: MAILBOX.email + '\n' }), /Mailbox URL unavailable/);
+});
+
+test('legacy addresses accepted by the existing account API still receive working links', async (t) => {
+	const env = environment(t, { empty: true });
+	const addresses = [
+		'a'.repeat(65) + '@example.invalid',
+		'a'.repeat(260) + '@example.invalid',
+		'legacy@-existing.example.invalid',
+	];
+	for (const [index, email] of addresses.entries()) {
+		const mailbox = { accountId: index + 10, email };
+		env.db.sqlite.prepare('INSERT INTO account VALUES (?, ?, 0)').run(mailbox.accountId, email);
+		env.db.addMail(index + 1, mailbox.accountId, email);
+		const value = await body(await readMailbox(new Request(await link(env, mailbox)), env), 200);
+		assert.deepEqual(value.data.list.map(row => row.toEmail), [email]);
+	}
 });

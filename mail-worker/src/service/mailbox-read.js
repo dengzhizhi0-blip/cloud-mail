@@ -1,15 +1,16 @@
 const READ_PATH = '/api/mailbox/read';
 const SIGNING_CONTEXT = 'cloud-mail:mailbox-read:v1';
 const encoder = new TextEncoder();
-const emailPattern = /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/;
+// Keep the existing account API's address grammar, including legacy long
+// addresses, so appending a read URL cannot break an existing account page.
+const emailPattern = /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
 
 function mailboxIdentity(accountId, email) {
 	const id = String(accountId);
 	if (!/^[1-9]\d{0,15}$/.test(id) || !Number.isSafeInteger(Number(id)) || String(Number(id)) !== id) {
 		return null;
 	}
-	if (typeof email !== 'string' || email.length > 254 || email.trim() !== email || !emailPattern.test(email)
-		|| email.indexOf('@') > 64) {
+	if (typeof email !== 'string' || email.trim() !== email || !emailPattern.test(email)) {
 		return null;
 	}
 	return { accountId: Number(id), email: email.toLowerCase() };
