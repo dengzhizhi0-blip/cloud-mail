@@ -23,7 +23,7 @@ app.post('/account/add', async (c) => {
 	return c.json(result.ok({
 		...account,
 		mailUrl: await createMailboxReadUrl(c.req.url, c.env, account),
-	})));
+	}));
 });
 
 app.put('/account/setName', async (c) => {
